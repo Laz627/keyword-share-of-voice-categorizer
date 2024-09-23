@@ -50,10 +50,10 @@ if uploaded_file:
         def extract_subfolders(url):
             try:
                 parsed_url = urllib.parse.urlparse(url)
-                domain = parsed_url.netloc.replace('www.', '').split('.')[0].capitalize()
+                domain = parsed_url.netloc.split('.')[1].capitalize() if 'www.' in parsed_url.netloc else parsed_url.netloc.split('.')[0].capitalize()
                 subfolders = [segment for segment in parsed_url.path.strip('/').split('/') if segment]
-                subfolder_dict = {f"L{i+1}": subfolder.replace('-', ' ').capitalize() for i, subfolder in enumerate(subfolders)}
-                subfolder_dict['L0'] = domain
+                subfolder_dict = {'L0': domain}
+                subfolder_dict.update({f"L{i+1}": subfolder.replace('-', ' ').capitalize() for i, subfolder in enumerate(subfolders)})
                 return subfolder_dict
             except Exception as e:
                 return {}
