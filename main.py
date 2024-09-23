@@ -122,15 +122,15 @@ if uploaded_file:
         # Display the result in Streamlit
         st.write("Filtered Keywords:", result)
 
-        # Convert DataFrame to Excel format in-memory
+        # Convert DataFrame to Excel format in-memory using BytesIO
         output = BytesIO()
         result.to_excel(output, index=False, engine='openpyxl')
         output.seek(0)
-
+        
         # Provide download button for the result
         st.download_button(
             label="Download as Excel",
-            data=output,
+            data=output.getvalue(),  # Ensure to pass the correct bytes-like object
             file_name='keyword_landscape.xlsx',
             mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
