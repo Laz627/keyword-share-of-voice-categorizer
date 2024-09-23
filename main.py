@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
+from io import BytesIO
 
 # App title and creator information
 st.title("Keyword Landscape & Share of Voice Tracker")
@@ -18,7 +19,6 @@ This tool helps you quickly develop a comprehensive keyword landscape and share 
 1. Upload your CSV file using the uploader below.
 2. Choose the number of top keywords per URL to include in the analysis.
 3. View the results and download the processed data.
-4. Include the following header names in your CSV: 'Keyword', 'URL', 'Blended Rank', 'Search Volume', 'CPC'.
 
 """)
 
@@ -46,8 +46,7 @@ if uploaded_file:
 
     # Create a new DataFrame for results
     result = pd.DataFrame(columns=[
-        'URL', 'Keyword', 'Blended Rank', 'Search Volume', 'CPC', 
-        # Placeholder for subfolder columns
+        'URL', 'Keyword', 'Blended Rank', 'Search Volume', 'CPC'
     ])
 
     rows_to_append = []  # Temporary list to hold data before converting to DataFrame
@@ -77,10 +76,15 @@ if uploaded_file:
     # Display the result in Streamlit
     st.write("Filtered Keywords:", result)
 
+    # Convert DataFrame to Excel format in-memory
+    output = BytesIO()
+    result.to_excel(output, index=False, engine='openpyxl')
+    output.seek(0)
+
     # Provide download button for the result
     st.download_button(
         label="Download as Excel",
-        data=result.to_excel(index=False, engine='openpyxl'),
+        data=output,
         file_name='keyword_landscape.xlsx',
         mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
