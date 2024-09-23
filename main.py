@@ -28,8 +28,8 @@ if uploaded_file:
     # Read CSV into DataFrame
     df = pd.read_csv(uploaded_file, encoding='ISO-8859-1')
 
-    # Renaming columns for clarity, adjust these if column names are different
-    df.columns = ['Keyword', 'URL', 'Blended Rank', 'Search Volume', 'CPC']
+    # Renaming columns if needed to match expected format
+    df.columns = ['URL', 'Keyword', 'Blended Rank', 'Search Volume', 'CPC']
 
     # Clean and drop any rows with missing or malformed data
     df = df.dropna(subset=['Keyword', 'URL', 'Blended Rank', 'Search Volume'])
@@ -65,7 +65,7 @@ if uploaded_file:
             top_keywords = group.head(keyword_limit)
 
             for _, row in top_keywords.iterrows():
-                # Ensure the URL is a string and not a malformed entry
+                # Ensure the URL is correctly parsed and not malformed
                 if not isinstance(url, str):
                     continue
 
@@ -77,7 +77,7 @@ if uploaded_file:
                     'Search Volume': row['Search Volume'],
                     'CPC': row.get('CPC', 'N/A')  # Handle missing CPC values
                 }
-                # Add subfolder data to the row
+                # Add subfolder data to the row based on URL
                 subfolders = extract_subfolders(url)
                 new_row.update(subfolders)
                 rows_to_append.append(new_row)
