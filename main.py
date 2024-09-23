@@ -18,7 +18,8 @@ This tool helps you quickly develop a comprehensive keyword landscape and share 
 **Instructions:**
 1. Upload your CSV file using the uploader below.
 2. Choose the number of top keywords per URL to include in the analysis using the slider.
-3. Click the "Generate Results" button to view the results and download the processed data.
+3. Optionally, include additional top keywords based on overall search volume.
+4. Click the "Generate Results" button to view the results and download the processed data.
 
 """)
 
@@ -40,14 +41,19 @@ if uploaded_file:
     # User input for number of keywords to select per URL
     keyword_limit = st.slider("Select the number of top keywords per URL:", 1, 25, 5)
 
+    # Option to include additional keywords based on top overall search volume
+    include_top_search_volume = st.checkbox("Include top keywords based on overall search volume")
+
     # Button to generate results
     if st.button("Generate Results"):
         # Function to extract subfolder levels from URLs
         def extract_subfolders(url):
             try:
                 parsed_url = urllib.parse.urlparse(url)
+                domain = parsed_url.netloc.replace('www.', '').split('.')[0].capitalize()
                 subfolders = [segment for segment in parsed_url.path.strip('/').split('/') if segment]
-                subfolder_dict = {f"L{i}": subfolder.replace('-', ' ').capitalize() for i, subfolder in enumerate(subfolders)}
+                subfolder_dict = {f"L{i+1}": subfolder.replace('-', ' ').capitalize() for i, subfolder in enumerate(subfolders)}
+                subfolder_dict['L0'] = domain
                 return subfolder_dict
             except Exception as e:
                 return {}
@@ -82,8 +88,27 @@ if uploaded_file:
                 new_row.update(subfolders)
                 rows_to_append.append(new_row)
 
+        # If the user chose to include additional top search volume keywords
+        if include_top_search_volume:
+            # Select the top keywords based on search volume across the entire DataFrame
+            top_volume_keywords = df.sort_values(by='Search Volume', ascending=False).head(keyword_limit)
+            for _, row in top_volume_keywords.iterrows():
+                new_row = {
+                    'URL': row['URL'],
+                    'Keyword': row['Keyword'],
+                    'Blended Rank': row['Blended Rank'],
+                    'Search Volume': row['Search Volume'],
+                    'CPC': row.get('CPC', 'N/A')
+                }
+                subfolders = extract_subfolders(row['URL'])
+                new_row.update(subfolders)
+                rows_to_append.append(new_row)
+
         # Convert list of dicts to DataFrame
         result = pd.DataFrame(rows_to_append)
+
+        # Remove duplicates if keywords appear in both URL-specific and top volume selections
+        result = result.drop_duplicates(subset=['URL', 'Keyword'])
 
         # Display the result in Streamlit
         st.write("Filtered Keywords:", result)
