@@ -46,8 +46,11 @@ if uploaded_file:
         def extract_subfolders(url):
             try:
                 parsed_url = urllib.parse.urlparse(url)
+                # Extract the main part between www./https:// and .com
+                domain = parsed_url.netloc.replace('www.', '').split('.')[0].capitalize()
                 subfolders = [segment for segment in parsed_url.path.strip('/').split('/') if segment]
-                subfolder_dict = {f"L{i}": subfolder.replace('-', ' ').capitalize() for i, subfolder in enumerate(subfolders)}
+                subfolder_dict = {f"L{i+1}": subfolder.replace('-', ' ').capitalize() for i, subfolder in enumerate(subfolders)}
+                subfolder_dict['L0'] = domain
                 return subfolder_dict
             except Exception as e:
                 return {}
