@@ -62,12 +62,20 @@ if uploaded_file:
 
         rows_to_append = []  # Temporary list to hold data before converting to DataFrame
 
+        # Scoring function to balance rank and volume
+        def score_keywords(row):
+            # Adjust weights as necessary to prioritize rank vs. volume
+            rank_score = 1 / (row['Blended Rank'] + 1)  # Lower rank is better
+            volume_score = row['Search Volume'] / max(df['Search Volume'])  # Higher volume is better
+            return rank_score + volume_score
+
         # Group data by URL and process each group
         for url, group in df.groupby('URL'):
-            # Sort each group by blended rank (ascending) and search volume (descending)
-            group = group.sort_values(by=['Blended Rank', 'Search Volume'], ascending=[True, False])
+            # Calculate score for each keyword and sort by score
+            group['Score'] = group.apply(score_keywords, axis=1)
+            group = group.sort_values(by='Score', ascending=False)
 
-            # Select keywords dynamically based on a combination of rank and volume
+            # Select top keywords based on combined score of rank and volume
             selected_keywords = group.head(keyword_limit)
 
             # Append selected keywords to results
