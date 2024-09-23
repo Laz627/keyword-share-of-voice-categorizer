@@ -2,8 +2,25 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-# App title
+# App title and creator information
 st.title("Keyword Landscape & Share of Voice Tracker")
+st.markdown("""
+### Developed by Brandon Lazovic
+
+This tool helps you quickly develop a comprehensive keyword landscape and share of voice tracking set without manually reviewing thousands of keywords. It allows you to:
+
+- Upload your CSV file containing keywords, URLs, blended ranks, search volumes, and optional CPC data.
+- Prioritize top keywords based on rank (lower is better) and search volume (higher is better).
+- Extract and categorize subfolder levels from URLs to understand keyword distribution across different site sections.
+- Download the processed data in Excel format for further analysis.
+
+**Instructions:**
+1. Upload your CSV file using the uploader below.
+2. Choose the number of top keywords per URL to include in the analysis.
+3. View the results and download the processed data.
+4. Include the following header names in your CSV: 'Keyword', 'URL', 'Blended Rank', 'Search Volume', 'CPC'.
+
+""")
 
 # File upload
 uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
