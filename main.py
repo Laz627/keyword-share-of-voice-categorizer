@@ -17,8 +17,8 @@ This tool helps you quickly develop a comprehensive keyword landscape and share 
 
 **Instructions:**
 1. Upload your CSV file using the uploader below.
-2. Choose the number of top keywords per URL to include in the analysis.
-3. View the results and download the processed data.
+2. Choose the number of top keywords per URL to include in the analysis using the slider.
+3. Click the "Generate Results" button to view the results and download the processed data.
 
 """)
 
@@ -31,60 +31,72 @@ if uploaded_file:
     # Renaming columns for clarity, adjust these if column names are different
     df.columns = ['Keyword', 'URL', 'Blended Rank', 'Search Volume', 'CPC']
 
+    # Clean and drop any rows with missing or malformed data
+    df = df.dropna(subset=['Keyword', 'URL', 'Blended Rank', 'Search Volume'])
+
     # Sorting based on Blended Rank (ascending) and Search Volume (descending)
     df = df.sort_values(by=['URL', 'Blended Rank', 'Search Volume'], ascending=[True, True, False])
 
     # User input for number of keywords to select per URL
     keyword_limit = st.slider("Select the number of top keywords per URL:", 1, 25, 5)
 
-    # Function to extract subfolder levels from URLs
-    def extract_subfolders(url):
-        parsed_url = urllib.parse.urlparse(url)
-        subfolders = parsed_url.path.strip('/').split('/')
-        subfolder_dict = {f"L{i}": subfolder.capitalize() for i, subfolder in enumerate(subfolders)}
-        return subfolder_dict
+    # Button to generate results
+    if st.button("Generate Results"):
+        # Function to extract subfolder levels from URLs
+        def extract_subfolders(url):
+            try:
+                parsed_url = urllib.parse.urlparse(url)
+                subfolders = [segment for segment in parsed_url.path.strip('/').split('/') if segment]
+                subfolder_dict = {f"L{i}": subfolder.replace('-', ' ').capitalize() for i, subfolder in enumerate(subfolders)}
+                return subfolder_dict
+            except Exception as e:
+                return {}
 
-    # Create a new DataFrame for results
-    result = pd.DataFrame(columns=[
-        'URL', 'Keyword', 'Blended Rank', 'Search Volume', 'CPC'
-    ])
+        # Create a new DataFrame for results
+        result = pd.DataFrame(columns=[
+            'URL', 'Keyword', 'Blended Rank', 'Search Volume', 'CPC'
+        ])
 
-    rows_to_append = []  # Temporary list to hold data before converting to DataFrame
+        rows_to_append = []  # Temporary list to hold data before converting to DataFrame
 
-    # Group data by URL and process each group
-    for url, group in df.groupby('URL'):
-        # Select top keywords per the user-selected limit
-        top_keywords = group.head(keyword_limit)
+        # Group data by URL and process each group
+        for url, group in df.groupby('URL'):
+            # Select top keywords per the user-selected limit
+            top_keywords = group.head(keyword_limit)
 
-        for _, row in top_keywords.iterrows():
-            # Create a dictionary for the row data
-            new_row = {
-                'URL': url,
-                'Keyword': row['Keyword'],
-                'Blended Rank': row['Blended Rank'],
-                'Search Volume': row['Search Volume'],
-                'CPC': row.get('CPC', 'N/A')  # Handle missing CPC values
-            }
-            # Add subfolder data to the row
-            subfolders = extract_subfolders(url)
-            new_row.update(subfolders)
-            rows_to_append.append(new_row)
+            for _, row in top_keywords.iterrows():
+                # Ensure the URL is a string and not a malformed entry
+                if not isinstance(url, str):
+                    continue
 
-    # Convert list of dicts to DataFrame
-    result = pd.DataFrame(rows_to_append)
+                # Create a dictionary for the row data
+                new_row = {
+                    'URL': url,
+                    'Keyword': row['Keyword'],
+                    'Blended Rank': row['Blended Rank'],
+                    'Search Volume': row['Search Volume'],
+                    'CPC': row.get('CPC', 'N/A')  # Handle missing CPC values
+                }
+                # Add subfolder data to the row
+                subfolders = extract_subfolders(url)
+                new_row.update(subfolders)
+                rows_to_append.append(new_row)
 
-    # Display the result in Streamlit
-    st.write("Filtered Keywords:", result)
+        # Convert list of dicts to DataFrame
+        result = pd.DataFrame(rows_to_append)
 
-    # Convert DataFrame to Excel format in-memory
-    output = BytesIO()
-    result.to_excel(output, index=False, engine='openpyxl')
-    output.seek(0)
+        # Display the result in Streamlit
+        st.write("Filtered Keywords:", result)
 
-    # Provide download button for the result
-    st.download_button(
-        label="Download as Excel",
-        data=output,
-        file_name='keyword_landscape.xlsx',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
+        # Convert DataFrame to Excel format in-memory
+        output = BytesIO()
+        result.to_excel(output, index=False, engine='openpyxl')
+        output.seek(0)
+
+        # Provide download button for the result
+        st.download_button(
+            label="Download as Excel",
+            data=output,
+            file_name='keyword_landscape.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
