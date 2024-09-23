@@ -35,9 +35,6 @@ if uploaded_file:
     # Clean and drop any rows with missing or malformed data
     df = df.dropna(subset=['Keyword', 'URL', 'Blended Rank', 'Search Volume'])
 
-    # Sorting based on Blended Rank (ascending) and Search Volume (descending)
-    df = df.sort_values(by=['URL', 'Blended Rank', 'Search Volume'], ascending=[True, True, False])
-
     # User input for number of keywords to select per URL
     keyword_limit = st.slider("Select the number of top keywords per URL:", 1, 25, 5)
 
@@ -67,11 +64,14 @@ if uploaded_file:
 
         # Group data by URL and process each group
         for url, group in df.groupby('URL'):
-            # Select top keywords per the user-selected limit
-            top_keywords = group.head(keyword_limit)
+            # Sort each group by blended rank (ascending) and search volume (descending)
+            group = group.sort_values(by=['Blended Rank', 'Search Volume'], ascending=[True, False])
 
-            for _, row in top_keywords.iterrows():
-                # Ensure the URL is correctly parsed and not malformed
+            # Select keywords dynamically based on a combination of rank and volume
+            selected_keywords = group.head(keyword_limit)
+
+            # Append selected keywords to results
+            for _, row in selected_keywords.iterrows():
                 if not isinstance(url, str):
                     continue
 
@@ -81,8 +81,9 @@ if uploaded_file:
                     'Keyword': row['Keyword'],
                     'Blended Rank': row['Blended Rank'],
                     'Search Volume': row['Search Volume'],
-                    'CPC': row.get('CPC', 'N/A')  # Handle missing CPC values
+                    'CPC': row.get('CPC', 'N/A')
                 }
+
                 # Add subfolder data to the row based on URL
                 subfolders = extract_subfolders(url)
                 new_row.update(subfolders)
@@ -90,7 +91,7 @@ if uploaded_file:
 
         # If the user chose to include additional top search volume keywords
         if include_top_search_volume:
-            # Select the top keywords based on search volume across the entire DataFrame
+            # Select top keywords based on overall search volume, not specific to URL
             top_volume_keywords = df.sort_values(by='Search Volume', ascending=False).head(keyword_limit)
             for _, row in top_volume_keywords.iterrows():
                 new_row = {
